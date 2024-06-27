@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/saffrondigits/api/controller"
 	"github.com/saffrondigits/api/db"
+	"github.com/saffrondigits/api/repo"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,13 +35,12 @@ func main() {
 
 	_ = dbInst
 
+	sqlImpl := repo.NewSqlDbImplementation(dbInst)
+	apiCtrl := controller.NewApiController(sqlImpl, log)
 	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
+
+	router := controller.SetUpRoute(r, apiCtrl)
 
 	log.Infof("Starting the server at address %s", Address)
-	r.Run(Address)
+	router.Run(Address)
 }
