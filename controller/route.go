@@ -27,6 +27,7 @@ func SetUpRoute(router *gin.Engine, apiCtrl *ApiController) *gin.Engine {
 	router.GET("/ping", apiCtrl.Ping)
 	router.POST("/register", apiCtrl.Register)
 	router.POST("/login", apiCtrl.Login)
+	router.DELETE("/delete", apiCtrl.DeleteUser)
 
 	return router
 }
@@ -83,8 +84,32 @@ func (ac *ApiController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "successfully logged in"})
 }
 
-func (as *ApiController) DeleteUser(c *gin.Context) {
+func (ac *ApiController) DeleteUser(c *gin.Context) {
+	var loginCred models.LoginCred
 
+	if err := c.ShouldBindJSON(&loginCred); err != nil {
+		ac.logger.Error("Error binding JSON: ", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if email exists
+	_, err := ac.dbConn.CheckIfEmailExists(loginCred.Email)
+	if err != nil {
+		ac.logger.Error("error: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	//delete the user
+	err = ac.dbConn.DeleteCheckedUser(loginCred.Email)
+	if err != nil {
+		ac.logger.Error("Error Deleting user: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Deleted successfully"})
 }
 
 // id | first_name | last_name |      email       | password

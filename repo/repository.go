@@ -12,6 +12,7 @@ import (
 type SqlDbImplementation interface {
 	RegisterUser(user models.User) error
 	CheckIfEmailExists(email string) (*models.DbLoginCred, error)
+	DeleteCheckedUser(email string) error
 }
 
 type sqlDBQuery struct {
@@ -42,4 +43,13 @@ func (db *sqlDBQuery) CheckIfEmailExists(email string) (*models.DbLoginCred, err
 	}
 
 	return &models.DbLoginCred{Email: emailId, Hash: hash}, nil
+}
+
+func (db *sqlDBQuery) DeleteCheckedUser(email string) error {
+	row := db.dbConn.QueryRow("DELETE FROM user_account WHERE email=$1", email)
+	if row.Err() != nil {
+		logrus.Errorf("Error while deleting the user: %v", row.Err())
+		return row.Err()
+	}
+	return nil
 }
