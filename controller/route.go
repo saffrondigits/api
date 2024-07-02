@@ -5,6 +5,7 @@ import (
 
 	"github.com/saffrondigits/api/models"
 	"github.com/saffrondigits/api/repo"
+	"github.com/saffrondigits/api/security"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,17 @@ func (ac *ApiController) Register(c *gin.Context) {
 		return
 	}
 
-	err := ac.dbConn.RegisterUser(user)
+	// Encrypt password to hash
+	hash, err := security.GenerateHash(user.Password)
+	if err != nil {
+		ac.logger.Error("Error generating password hash: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	user.Password = hash
+
+	err = ac.dbConn.RegisterUser(user)
 	if err != nil {
 		ac.logger.Error("Error registering user: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -74,8 +85,8 @@ func (ac *ApiController) Login(c *gin.Context) {
 	}
 
 	// Check if password matches
-	if loginCred.Password != dbCred.Hash {
-		ac.logger.Error("Error: ", err)
+	if !security.CompareHashAndPassword(dbCred.Hash, loginCred.Password) {
+		ac.logger.Error("error: ", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "username/password wrong"})
 		return
 	}
@@ -111,8 +122,3 @@ func (ac *ApiController) DeleteUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Deleted successfully"})
 }
-
-// id | first_name | last_name |      email       | password
-// ----+------------+-----------+------------------+----------
-//   1 | John       | Mayer     | jm@example.com   | abcd
-//   2 | Rahul      | Gandhi    | raga@example.com | abcd
