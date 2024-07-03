@@ -91,8 +91,15 @@ func (ac *ApiController) Login(c *gin.Context) {
 		return
 	}
 
+	tokenString, err := security.CreateToken(loginCred.Email)
+	if err != nil {
+		ac.logger.Error("error: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	// Acknowledge user they are logged in
-	c.JSON(http.StatusOK, gin.H{"message": "successfully logged in"})
+	c.JSON(http.StatusOK, gin.H{"message": "successfully logged in", "token": tokenString})
 }
 
 func (ac *ApiController) DeleteUser(c *gin.Context) {
