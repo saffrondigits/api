@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/saffrondigits/api/middleware"
 	"github.com/saffrondigits/api/models"
 	"github.com/saffrondigits/api/repo"
 	"github.com/saffrondigits/api/security"
@@ -24,11 +25,11 @@ func NewApiController(dbConn repo.SqlDbImplementation, logger *logrus.Logger) *A
 }
 
 func SetUpRoute(router *gin.Engine, apiCtrl *ApiController) *gin.Engine {
-
 	router.GET("/ping", apiCtrl.Ping)
 	router.POST("/register", apiCtrl.Register)
 	router.POST("/login", apiCtrl.Login)
-	router.DELETE("/delete", apiCtrl.DeleteUser)
+	router.DELETE("/delete", middleware.TokenMiddleware(), apiCtrl.DeleteUser)
+	router.DELETE("/update", middleware.TokenMiddleware(), apiCtrl.UpdateUser)
 
 	return router
 }
@@ -127,5 +128,9 @@ func (ac *ApiController) DeleteUser(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, gin.H{"message": "Deleted successfully"})
+}
+
+func (ac *ApiController) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Deleted successfully"})
 }
